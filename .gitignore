@@ -112,3 +112,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Input/State files
+src/input.txt
+src/output.txt
+src/init/input.txt
