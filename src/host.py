@@ -221,7 +221,7 @@ class GO:
         :param piece_type: 1(white piece) or 2(black piece).
         :param test_check: boolean if it's a test check.
         :return: boolean indicating whether the placement is valid.
-        '''   
+        '''
         board = self.board
         verbose = self.verbose
         if test_check:
@@ -236,13 +236,13 @@ class GO:
             if verbose:
                 print(('Invalid placement. column should be in the range 1 to {}.').format(len(board) - 1))
             return False
-        
+
         # Check if the place already has a piece
         if board[i][j] != 0:
             if verbose:
                 print('Invalid placement. There is already a chess in this position.')
             return False
-        
+
         # Copy the board for testing
         test_go = self.copy_board()
         test_board = test_go.board
@@ -267,14 +267,14 @@ class GO:
                     print('Invalid placement. A repeat move not permitted by the KO rule.')
                 return False
         return True
-        
+
     def update_board(self, new_board):
         '''
         Update the board with new_board
 
         :param new_board: new board.
         :return: None.
-        '''   
+        '''
         self.board = new_board
 
     def visualize_board(self):
@@ -328,7 +328,7 @@ class GO:
             for j in range(self.size):
                 if board[i][j] == piece_type:
                     cnt += 1
-        return cnt          
+        return cnt
 
     def judge_winner(self):
         '''
@@ -336,14 +336,14 @@ class GO:
 
         :param: None.
         :return: piece type of winner of the game (0 if it's a tie).
-        '''        
+        '''
 
         cnt_1 = self.score(1)
         cnt_2 = self.score(2)
         if cnt_1 > cnt_2 + self.komi: return 1
         elif cnt_1 < cnt_2 + self.komi: return 2
         else: return 0
-        
+
     def play(self, player1, player2, verbose=False):
         '''
         The game starts!
@@ -360,20 +360,20 @@ class GO:
             print('----------Input "exit" to exit the program----------')
             print('X stands for black chess, O stands for white chess.')
             self.visualize_board()
-        
+
         verbose = self.verbose
         # Game starts!
         while 1:
             piece_type = 1 if self.X_move else 2
 
             # Judge if the game should end
-            if self.game_end(piece_type):       
+            if self.game_end(piece_type):
                 result = self.judge_winner()
                 if verbose:
                     print('Game ended.')
-                    if result == 0: 
+                    if result == 0:
                         print('The game is a tie.')
-                    else: 
+                    else:
                         print('The winner is {}'.format('X' if result == 1 else 'O'))
                 return result
 
@@ -393,7 +393,7 @@ class GO:
                 # If invalid input, continue the loop. Else it places a chess on the board.
                 if not self.place_chess(action[0], action[1], piece_type):
                     if verbose:
-                        self.visualize_board() 
+                        self.visualize_board()
                     continue
 
                 self.died_pieces = self.remove_died_pieces(3 - piece_type) # Remove the dead pieces of opponent
@@ -410,7 +410,7 @@ class GO:
 def judge(n_move, verbose=False):
 
     N = 5
-   
+
     piece_type, previous_board, board = readInput(N)
     go = GO(N)
     go.verbose = verbose
@@ -434,13 +434,13 @@ def judge(n_move, verbose=False):
         go.visualize_board()
         print()
 
-    if go.game_end(piece_type, action):       
+    if go.game_end(piece_type, action):
         result = go.judge_winner()
         if verbose:
             print('Game end.')
-            if result == 0: 
+            if result == 0:
                 print('The game is a tie.')
-            else: 
+            else:
                 print('The winner is {}'.format('X' if result == 1 else 'O'))
         sys.exit(result)
 
@@ -460,5 +460,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     judge(args.move, args.verbose)
-        
-        
+
+
