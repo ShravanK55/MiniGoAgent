@@ -7,7 +7,7 @@ from host import GO
 
 class AlphaBetaPlayer():
     def __init__(self):
-        self.type = 'random'
+        self.type = 'alpha-beta'
 
     def get_agent_action(self, go, piece_type, max_depth=3):
         """

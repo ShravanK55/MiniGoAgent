@@ -1,22 +1,33 @@
 import random
-import sys
 from read import readInput
 from write import writeOutput
 
 from host import GO
 
 class RandomPlayer():
+    """
+    A Go agent that plays by performing random valid moves.
+    """
+
     def __init__(self):
-        self.type = 'random'
+        """
+        Method to initialize the random agent.
+        """
+        self.type = "random"
 
-    def get_input(self, go, piece_type):
-        '''
-        Get one input.
+    def get_agent_action(self, go, piece_type):
+        """
+        Method to get the agent action.
 
-        :param go: Go instance.
-        :param piece_type: 1('X') or 2('O').
-        :return: (row, column) coordinate of input.
-        '''        
+        Args:
+            go(GO): Instance of the Go board.
+            piece_type(int): Type of piece the player agent is playing as. 1('X') or 2('O').
+
+        Returns:
+            (row, column): Co-ordinates of the board to place the agent's piece at. Returns "PASS" instead if no valid
+                placement is possible.
+
+        """
         possible_placements = []
         for i in range(go.size):
             for j in range(go.size):
@@ -34,5 +45,5 @@ if __name__ == "__main__":
     go = GO(N)
     go.set_board(piece_type, previous_board, board)
     player = RandomPlayer()
-    action = player.get_input(go, piece_type)
+    action = player.get_agent_action(go, piece_type)
     writeOutput(action)

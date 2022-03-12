@@ -58,6 +58,18 @@ class GO:
         self.previous_board = previous_board
         self.board = board
 
+    @property
+    def encoded_state(self):
+        """
+        Method to get the encoded state of the board.
+        """
+        state = ""
+        for i in range(self.size):
+            for j in range(self.size):
+                state += str(self.board[i][j])
+
+        return state
+
     def compare_board(self, board1, board2):
         for i in range(self.size):
             for j in range(self.size):
@@ -406,6 +418,69 @@ class GO:
 
             self.n_move += 1
             self.X_move = not self.X_move # Players take turn
+
+    def train(self, player1, player2, num_games=10):
+        """
+        Method to train a Q learning agent by playing a series of games against another player.
+
+        Args:
+            player1(GoPlayer): Instance of player 1.
+            player2(str): Type of agent for player 2. Defaults to "random-player".
+
+        """
+        self.init_board(self.size)
+
+        if player1.type == "q-player" or player2.type == "q-player":
+            self.verbose = True
+            self.visualize_board()
+
+        verbose = self.verbose
+        games_played = 0
+        # Game starts!
+        while games_played < num_games:
+            piece_type = 1 if self.X_move else 2
+
+            # Judge if the game should end
+            if self.game_end(piece_type):
+                result = self.judge_winner()
+                if verbose:
+                    print('Game ended.')
+                    if result == 0:
+                        print('The game is a tie.')
+                    else:
+                        print('The winner is {}'.format('X' if result == 1 else 'O'))
+                return result
+
+            if verbose:
+                player = "X" if piece_type == 1 else "O"
+                print(player + " makes move...")
+
+            # Game continues
+            if piece_type == 1: action = player1.get_agent_action(self, piece_type)
+            else: action = player2.get_agent_action(self, piece_type)
+
+            if verbose:
+                player = "X" if piece_type == 1 else "O"
+                print(action)
+
+            if action != "PASS":
+                # If invalid input, continue the loop. Else it places a chess on the board.
+                if not self.place_chess(action[0], action[1], piece_type):
+                    if verbose:
+                        self.visualize_board()
+                    continue
+
+                self.died_pieces = self.remove_died_pieces(3 - piece_type) # Remove the dead pieces of opponent
+            else:
+                self.previous_board = deepcopy(self.board)
+
+            if verbose:
+                self.visualize_board() # Visualize the board again
+                print()
+
+            self.n_move += 1
+            self.X_move = not self.X_move # Players take turn
+
 
 def judge(n_move, verbose=False):
 
