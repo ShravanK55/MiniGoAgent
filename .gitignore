@@ -117,3 +117,6 @@ dmypy.json
 src/input.txt
 src/output.txt
 src/init/input.txt
+
+# Q-table file
+src/q_values.json

@@ -1,5 +1,8 @@
+import copy
 import json
+import random
 from read import readInput
+from utils import get_rotated_state, get_flipped_state, get_equivalent_action
 from write import writeOutput
 
 from host import GO
@@ -35,6 +38,7 @@ class QPlayer():
         self.alpha = alpha
         self.gamma = gamma
         self.q_values = {}
+        self.updated_q_values = {}
 
         with open(q_table_path, 'r') as q_values_file:
             self.q_values = json.load(q_values_file)
@@ -75,14 +79,88 @@ class QPlayer():
             state(str): Encoded state of the Go board.
 
         Returns:
-            (q_values): Q values for the given Go board state.
+            (q_values, equiv_state, h_flipped, v_flipped, num_rotations): Q values for the given Go board state, the
+                equivalent state, whether the state was horizontally flipped, whether the state was vertically flipped,
+                and the number of rotations to find the equivalent action.
 
         """
-        if state not in self.q_values:
+        equiv_state, h_flipped, v_flipped, num_rot = self.get_equivalent_state(state)
+
+        if equiv_state is None:
+            equiv_state = state
             self.q_values[state] = [[self.default_q_value for _ in range(self.board_size)] for _ in
                                     range(self.board_size)]
 
-        return self.q_values[state]
+        return self.q_values[equiv_state], equiv_state, h_flipped, v_flipped, num_rot
+
+
+    def get_equivalent_state(self, state):
+        """
+        Method to get a state in the Q values which is symmetrically and rotationally equivalent to the given state.
+
+        Args:
+            state(str): State to get the rotational and symmetric equivalent for.
+
+        Returns:
+            (equivalent_state, flip_horizontal, flip_vertical, rotation_amount): The equivalent state, whether the
+                original state is flipped horizontally, whether the original state was flipped vertically, number of
+                clockwise rotations to find the equivalent action.
+
+        """
+        # Check rotated states without symmetry.
+        rotated_state, num_rotations = self.get_equivalent_rotated_state(state)
+        if rotated_state is not None:
+            return (rotated_state, False, False, num_rotations)
+
+        # Check states with horizontal symmetry.
+        hf_state = get_flipped_state(state, self.board_size, True, False)
+        hf_r_state, num_rotations = self.get_equivalent_rotated_state(hf_state)
+        if hf_r_state is not None:
+            return (hf_r_state, True, False, num_rotations)
+
+        # Check states with vertical symmetry.
+        vf_state = get_flipped_state(state, self.board_size, False, True)
+        vf_r_state, num_rotations = self.get_equivalent_rotated_state(vf_state)
+        if vf_r_state is not None:
+            return (vf_r_state, False, True, num_rotations)
+
+        # Check states with horizontal and vertical symmetry.
+        hvf_state = get_flipped_state(state, self.board_size, True, True)
+        hvf_r_state, num_rotations = self.get_equivalent_rotated_state(hvf_state)
+        if hvf_r_state is not None:
+            return (hvf_r_state, True, True, num_rotations)
+
+        return (None, False, False, 0)
+
+
+    def get_equivalent_rotated_state(self, state):
+        """
+        Method to get a state in the Q values which is rotationally equivalent to the given state.
+
+        Args:
+            state(str): State to get the rotationa equivalent for.
+
+        Returns:
+            (equivalent_state, rotation_amount): The equivalent state and the number of clockwise rotations to find the
+                equivalent action.
+
+        """
+        if state in self.q_values:
+            return (state, 0)
+
+        state_r1 = get_rotated_state(state, self.board_size)
+        if state_r1 in self.q_values:
+            return (state_r1, 3)
+
+        state_r2 = get_rotated_state(state_r1, self.board_size)
+        if state_r2 in self.q_values:
+            return (state_r2, 2)
+
+        state_r3 = get_rotated_state(state_r2, self.board_size)
+        if state_r3 in self.q_values:
+            return (state_r3, 1)
+
+        return (None, 0)
 
 
     def learn(self, result):
@@ -108,12 +186,18 @@ class QPlayer():
             if action == "PASS":
                 continue
 
-            q_values = self.q(state)
+            q_values, equiv_state, h_flipped, v_flipped, num_rot = self.q(state)
+            self.updated_q_values[equiv_state] = q_values
+
+            # Rotate action in the same way as equivalent state.
+            num_rot = 4 - num_rot if num_rot > 0 else num_rot
+            e_action = get_equivalent_action(action, self.board_size, h_flipped, v_flipped, num_rot, False)
+
             if max_q_value < 0:
-                q_values[action[0]][action[1]] = reward
+                q_values[e_action[0]][e_action[1]] = reward
             else:
-                q_values[action[0]][action[1]] = (1 - self.alpha) * q_values[action[0]][action[1]] + \
-                                                 self.alpha * self.gamma * max_q_value
+                q_values[e_action[0]][e_action[1]] = (1 - self.alpha) * q_values[e_action[0]][e_action[1]] + \
+                                                     self.alpha * self.gamma * max_q_value
 
             for i in range(self.board_size):
                 for j in range(self.board_size):
@@ -136,39 +220,46 @@ class QPlayer():
                 placement is possible.
 
         """
-        q_values = self.q(go.encoded_state)
-        action, value = self.get_max_action(go, piece_type, q_values)
 
-        print("Player performs action {} with value {}".format(action, value))
+        action, value = self.get_max_action(go, piece_type)
         self.state_history.append((go.encoded_state, action))
         return action
 
 
-    def get_max_action(self, go, piece_type, q_values):
+    def get_max_action(self, go, piece_type):
         """
         Method to get the action with the maximum Q value for a given state.
 
         Args:
             go(GO): Instance of the Go board.
             piece_type(int): Type of piece the player agent is playing as. 1('X') or 2('O').
-            q_values(list): Q values for the actions that can be performed in the given state.
 
         Returns:
             (action, value): Action with the maximum Q value.
 
         """
-        max_action = "PASS"
+        max_actions = ["PASS"]
         max_q = float("-inf")
 
+        q_values, _, h_flipped, v_flipped, num_rot = self.q(go.encoded_state)
         for i in range(go.size):
             for j in range(go.size):
-                if q_values[i][j] > max_q:
-                    if go.valid_place_check(i, j, piece_type, test_check=True):
-                        max_action = (i, j)
-                        max_q = q_values[i][j]
+                if q_values[i][j] >= max_q:
+                    equiv_action = get_equivalent_action((i, j), self.board_size, h_flipped, v_flipped, num_rot)
+                    if go.valid_place_check(equiv_action[0], equiv_action[1], piece_type, test_check=True):
+                        if q_values[i][j] > max_q:
+                            max_actions = [equiv_action]
+                            max_q = q_values[i][j]
+                        else:
+                            max_actions.append(equiv_action)
 
                     else:
                         q_values[i][j] = -1.0
+
+
+        max_action = max_actions[0]
+        if len(max_actions) > 1:
+            max_action = random.choice(max_actions)
 
         return max_action, max_q
 

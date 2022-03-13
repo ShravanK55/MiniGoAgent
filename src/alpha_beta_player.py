@@ -24,8 +24,7 @@ class AlphaBetaPlayer():
                 placement is possible.
 
         """
-        action, value = self.max_action(go, piece_type, max_depth, float("-inf"), float("inf"))
-        print("Player performs action {} with value {}".format(action, value))
+        action, _ = self.max_action(go, piece_type, max_depth, float("-inf"), float("inf"))
 
         return action
 

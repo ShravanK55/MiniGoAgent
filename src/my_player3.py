@@ -7,7 +7,7 @@ from host import GO
 
 
 if __name__ == "__main__":
-    player_type = "ALPHA_BETA"
+    player_type = "Q"
     N = 5
     piece_type, previous_board, board = readInput(N)
     go = GO(N)
@@ -18,7 +18,7 @@ if __name__ == "__main__":
         player = AlphaBetaPlayer()
         action = player.get_agent_action(go, piece_type, 3)
     elif player_type == "Q":
-        player = QPlayer()
+        player = QPlayer(piece_type, "q_values.json")
         action = player.get_agent_action(go, piece_type)
 
     writeOutput(action)

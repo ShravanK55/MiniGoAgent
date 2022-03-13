@@ -1,3 +1,4 @@
+from mimetypes import init
 import sys
 import random
 import timeit
@@ -18,6 +19,8 @@ class GO:
         """
         self.size = n
         #self.previous_board = None # Store the previous board
+        self.board = None
+        self.previous_board = None
         self.X_move = True # X chess plays first
         self.died_pieces = [] # Intialize died pieces to be empty
         self.n_move = 0 # Trace the number of moves
@@ -37,6 +40,18 @@ class GO:
         # 'O' pieces marked as 2
         self.board = board
         self.previous_board = deepcopy(board)
+
+    @property
+    def encoded_state(self):
+        """
+        Method to get the encoded state of the board.
+        """
+        state = ""
+        for i in range(self.size):
+            for j in range(self.size):
+                state += str(self.board[i][j])
+
+        return state
 
     def set_board(self, piece_type, previous_board, board):
         '''
@@ -58,17 +73,25 @@ class GO:
         self.previous_board = previous_board
         self.board = board
 
-    @property
-    def encoded_state(self):
+    def set_from_state(self, state):
         """
-        Method to get the encoded state of the board.
-        """
-        state = ""
-        for i in range(self.size):
-            for j in range(self.size):
-                state += str(self.board[i][j])
+        Method to set the Go board from an encoded state.
 
-        return state
+        Args:
+            state(str): Encoded state to set the Go board from.
+
+        """
+        board = [[int(state[i * self.size + j]) for j in range(self.size)] for i in range(self.size)]
+
+        init_previous_board = True
+        if self.board:
+            self.previous_board = deepcopy(self.board)
+            init_previous_board = False
+
+        self.board = board
+
+        if init_previous_board:
+            self.previous_board = deepcopy(self.board)
 
     def compare_board(self, board1, board2):
         for i in range(self.size):
