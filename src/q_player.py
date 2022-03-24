@@ -194,10 +194,10 @@ class QPlayer():
             e_action = get_equivalent_action(action, self.board_size, h_flipped, v_flipped, num_rot, False)
 
             if max_q_value < 0:
-                q_values[e_action[0]][e_action[1]] = reward
+                q_values[e_action[0]][e_action[1]] = round(reward, 4)
             else:
-                q_values[e_action[0]][e_action[1]] = (1 - self.alpha) * q_values[e_action[0]][e_action[1]] + \
-                                                     self.alpha * self.gamma * max_q_value
+                q_values[e_action[0]][e_action[1]] = round((1 - self.alpha) * q_values[e_action[0]][e_action[1]] +
+                                                           self.alpha * self.gamma * max_q_value, 4)
 
             for i in range(self.board_size):
                 for j in range(self.board_size):

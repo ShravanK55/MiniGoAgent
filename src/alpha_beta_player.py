@@ -1,4 +1,5 @@
 import copy
+import time
 from read import readInput
 from write import writeOutput
 
@@ -48,22 +49,25 @@ class AlphaBetaPlayer():
         # Additional score where amount of liberty for each pawn group is added to the utility value.
         player_liberty_score = 0
         opponent_liberty_score = 0
-        visited = [[False for x in range(go.size)] for y in range(go.size)]
+        visited = [[False for _ in range(go.size)] for _ in range(go.size)]
 
         for i in range(go.size):
             for j in range(go.size):
                 if not visited[i][j] and go.board[i][j] != 0:
                     allies = go.ally_dfs(i, j)
+
                     for ally in allies:
                         visited[ally[0]][ally[1]] = True
                         neighbours = go.detect_neighbor(ally[0], ally[1])
 
                         for neighbour in neighbours:
                             if go.board[neighbour[0]][neighbour[1]] == 0:
+                                visited_liberty[neighbour[0]][neighbour[1]] = True
                                 if go.board[ally[0]][ally[1]] == piece_type:
                                     player_liberty_score += 1
                                 else:
                                     opponent_liberty_score += 1
+
 
         # If the player is white, add the komi value to the player score, else add it to the opponent's score.
         return player_score + player_liberty_score + go.komi - (opponent_score + opponent_liberty_score) \
@@ -93,19 +97,24 @@ class AlphaBetaPlayer():
         actions = []
         for i in range(go.size):
             for j in range(go.size):
-                if go.valid_place_check(i, j, piece_type, test_check = True):
-                    actions.append((i,j))
+                actions.append((i,j))
+                #if go.valid_place_check(i, j, piece_type, test_check = True):
+                #    actions.append((i,j))
 
         # If no valid action exists, simply pass.
-        if not actions:
-            return "PASS", self.get_utility_value(go, piece_type)
+        #if not actions:
+        #    return "PASS", self.get_utility_value(go, piece_type)
 
         # Run the minimax recursion with alpha-beta pruning.
         a = "PASS"
         v = float("-inf")
         for action in actions:
             test_go = copy.deepcopy(go)
-            test_go.place_chess(action[0], action[1], piece_type)
+            success = test_go.place_chess(action[0], action[1], piece_type)
+
+            if not success:
+                continue
+
             test_go.remove_died_pieces(3 - piece_type)
 
             _, action_value = self.min_action(test_go, piece_type, depth - 1, alpha, beta)
@@ -143,19 +152,24 @@ class AlphaBetaPlayer():
         actions = []
         for i in range(go.size):
             for j in range(go.size):
-                if go.valid_place_check(i, j, 3 - piece_type, test_check = True):
-                    actions.append((i,j))
+                actions.append((i,j))
+                #if go.valid_place_check(i, j, 3 - piece_type, test_check = True):
+                #    actions.append((i,j))
 
         # If no valid action exists, simply pass.
-        if not actions:
-            return "PASS", self.get_utility_value(go, piece_type)
+        #if not actions:
+        #    return "PASS", self.get_utility_value(go, piece_type)
 
         # Run the minimax recursion with alpha-beta pruning.
         a = "PASS"
         v = float("inf")
         for action in actions:
             test_go = copy.deepcopy(go)
-            test_go.place_chess(action[0], action[1], 3 - piece_type)
+            success = test_go.place_chess(action[0], action[1], 3 - piece_type)
+
+            if not success:
+                continue
+
             test_go.remove_died_pieces(piece_type)
 
             _, action_value = self.max_action(test_go, piece_type, depth - 1, alpha, beta)
